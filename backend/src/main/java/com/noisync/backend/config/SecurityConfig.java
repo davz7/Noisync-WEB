@@ -32,7 +32,6 @@ public class SecurityConfig {
                         // públicos
                         .requestMatchers(
                                 "/api/health",
-                                "/api/db-test",
                                 "/api/auth/login",
                                 "/api/auth/register-leader",
                                 "/api/auth/accept-invite",
@@ -49,6 +48,8 @@ public class SecurityConfig {
 
                                 "/api/dev/**"
                         ).permitAll()
+
+                        .requestMatchers("/api/db-test").hasRole("LEADER")
 
                         // ejemplo de RBAC (si tus endpoints de líder son estos)
 .requestMatchers(HttpMethod.PUT, "/api/band", "/api/band/**").hasRole("LEADER")
