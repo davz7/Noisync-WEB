@@ -1,14 +1,13 @@
-
 function BandProfileCard({
-    name,
-    description,
-    instagram,
-    facebook,
-    twitter,
-    youtube,
-    website,
-    onEdit
-}) {
+                             name,
+                             description,
+                             instagram,
+                             facebook,
+                             twitter,
+                             youtube,
+                             website,
+                             onEdit
+                         }) {
     const role = localStorage.getItem("role");
     const isLeader = role === "LEADER";
 
@@ -18,11 +17,9 @@ function BandProfileCard({
         <div className="container-fluid">
 
             <div className="card shadow-sm mb-4">
-
                 <div className="card-body">
 
                     <div className="d-flex justify-content-between align-items-center">
-
                         <div>
                             <h5 className="fw-bold mb-0">{show(name)}</h5>
                             <small className="text-muted">Perfil de la banda</small>
@@ -36,7 +33,6 @@ function BandProfileCard({
                                 Editar banda
                             </button>
                         )}
-
                     </div>
 
                     <hr />
@@ -54,20 +50,30 @@ function BandProfileCard({
                             <small className="text-uppercase text-secondary">
                                 Descripción / Biografía
                             </small>
-                            <p className="mb-0 fw-medium">
-                                {show(description)}
-                            </p>
+                            {description && description.trim() !== "" ? (
+                                <p className="mb-0 fw-medium">{description}</p>
+                            ) : (
+                                <p className="mb-0 text-muted fst-italic">
+                                    Sin descripción
+                                    {isLeader && (
+                                        <span
+                                            className="ms-2 text-primary"
+                                            style={{ cursor: "pointer", fontSize: "0.85rem" }}
+                                            onClick={onEdit}
+                                        >
+                                            + Agregar
+                                        </span>
+                                    )}
+                                </p>
+                            )}
                         </div>
 
                     </div>
 
                 </div>
-
             </div>
 
-
             <div className="card shadow-sm mb-4">
-
                 <div className="card-body">
 
                     <h6 className="fw-bold">Redes sociales</h6>
@@ -122,14 +128,10 @@ function BandProfileCard({
                     </div>
 
                 </div>
-
             </div>
 
         </div>
     );
 }
-
-
-
 
 export default BandProfileCard;

@@ -31,7 +31,7 @@ function EditBandForm({ bandData, onBack }) {
             //console.log("Band state antes de enviar:", band);
             await api.put("/api/band", {
                 nombre: band.name,
-                descripcion: band.description
+                descripcion: band.description.trim() === "" ? null : band.description.trim()
             });
 
             const socials = [
@@ -46,6 +46,7 @@ function EditBandForm({ bandData, onBack }) {
 
             await api.put("/api/band/socials", socials);
 
+            toastSuccess("Perfil de banda actualizado correctamente");
             onBack();
 
         } catch (err) {
@@ -124,7 +125,12 @@ function EditBandForm({ bandData, onBack }) {
                                 name="description"
                                 value={band.description}
                                 onChange={handleChange}
+                                maxLength={500}
+                                placeholder="Explica la bada"
                             />
+                            <div className="form-text text-end">
+                                {band.description.length}/500 caracteres
+                            </div>
 
                         </div>
 
