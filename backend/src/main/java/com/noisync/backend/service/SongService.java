@@ -30,7 +30,8 @@ public class SongService {
                s.tono_original, s.escala_base,
                s.visibilidad, s.estatus, s.cover_url,
                b.nombre AS nombre_banda,
-               s.fecha_creacion, s.fecha_actualizacion
+               s.fecha_creacion, s.fecha_actualizacion,
+               (SELECT COUNT(*) FROM song_section ss WHERE ss.song_id = s.song_id) AS total_secciones
         FROM song s
         JOIN band b ON b.band_id = s.band_id
     """;
@@ -48,7 +49,8 @@ public class SongService {
             rs.getString("cover_url"),
             rs.getString("nombre_banda"),
             toInstant(rs.getTimestamp("fecha_creacion")),
-            toInstant(rs.getTimestamp("fecha_actualizacion"))
+            toInstant(rs.getTimestamp("fecha_actualizacion")),
+            rs.getInt("total_secciones")
     );
 
     private Instant toInstant(Timestamp ts) {
@@ -60,7 +62,7 @@ public class SongService {
             throw new IllegalArgumentException("El BPM debe ser mayor a 0");
 
         if (!req.visibilidad().equalsIgnoreCase("PUBLIC") &&
-            !req.visibilidad().equalsIgnoreCase("PRIVATE"))
+                !req.visibilidad().equalsIgnoreCase("PRIVATE"))
             throw new IllegalArgumentException("Visibilidad invalida");
 
         if (req.escalaBase() == null || req.escalaBase().isBlank())

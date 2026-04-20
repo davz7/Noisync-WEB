@@ -98,6 +98,7 @@ function MisCanciones() {
                             visibilidad={c.visibilidad}
                             nombreBanda={c.nombreBanda}
                             fechaCreacion={c.fechaCreacion}
+                            totalSecciones={c.totalSecciones}
                         />
                     ))}
                 </div>

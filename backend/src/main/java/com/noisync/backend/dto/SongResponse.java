@@ -15,5 +15,6 @@ public record SongResponse(
         String coverUrl,
         String nombreBanda,
         Instant fechaCreacion,
-        Instant fechaActualizacion
+        Instant fechaActualizacion,
+        Integer totalSecciones
 ) {}

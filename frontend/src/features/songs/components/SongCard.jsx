@@ -3,7 +3,7 @@ import SongAvatar from "./songAvatar";
 import { useNavigate } from "react-router-dom";
 
 
-function SongCard({ id, cover, titulo, artista, nombreBanda, fechaCreacion, estado, isLeader, onDelete, visibilidad, onToggleVisibility }) {
+function SongCard({ id, cover, titulo, artista, nombreBanda, fechaCreacion, estado, isLeader, onDelete, visibilidad, onToggleVisibility, totalSecciones }) {
 
     const formatFecha = (fecha) => {
         if (!fecha) return "";
@@ -47,6 +47,10 @@ function SongCard({ id, cover, titulo, artista, nombreBanda, fechaCreacion, esta
                         <i className="bi bi-calendar3 me-1"></i>
                         {formatFecha(fechaCreacion)}
                     </small>
+
+                        <small className="text-muted d-block mt-1">
+                            {totalSecciones} {totalSecciones === 1 ? "sección" : "secciones"}
+                        </small>
 
                     <div className="d-flex gap-2 mt-auto pt-2">
                         <button
