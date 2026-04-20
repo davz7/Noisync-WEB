@@ -15,6 +15,7 @@ import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+ 
 
 @Service
 public class SongService {
@@ -80,17 +81,21 @@ public class SongService {
     }
 
     // LIST (por banda)
-    public PageResponse<SongResponse> list(Long bandId, String q, int page, int size) {
+    //corregimos
+    public PageResponse<SongResponse> list(Long bandId, String visibility, int page, int size) {
 
         int offset = page * size;
 
-        String search = (q == null || q.isBlank()) ? "" :
-                " AND (LOWER(s.titulo) LIKE ? OR LOWER(s.artista_autor) LIKE ?)";
+        String search = (visibility == null || visibility.isBlank()) ? "" :
+                " AND s.visibilidad = ?";
+
+
+            String visibilityFilter = (visibility == null || visibility.isBlank()) ? "" : " AND s.visibilidad = ?";
 
         String sql = SONG_SELECT + """
             WHERE s.band_id = ?
               AND s.estatus = 'ACTIVO'
-        """ + search + """
+              """ + visibilityFilter + """
             ORDER BY s.fecha_creacion DESC
             OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
         """;
@@ -105,11 +110,11 @@ public class SongService {
         List<SongResponse> content;
         Long total;
 
-        if (q == null || q.isBlank()) {
+        if (visibility == null || visibility.isBlank()) {
             content = jdbc.query(sql, songMapper, bandId, offset, size);
             total = jdbc.queryForObject(countSql, Long.class, bandId);
         } else {
-            String like = "%" + q.trim().toLowerCase() + "%";
+            String like = "%" + visibility.trim().toLowerCase() + "%";
             content = jdbc.query(sql, songMapper, bandId, like, like, offset, size);
             total = jdbc.queryForObject(countSql, Long.class, bandId, like, like);
         }

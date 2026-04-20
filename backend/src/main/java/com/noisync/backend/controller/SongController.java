@@ -44,11 +44,11 @@ public class SongController {
     // READ paginado (leader y musician)
     @GetMapping
     public PageResponse<SongResponse> list(
-            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String visibility,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication auth) {
-        return songService.list(bandId(auth), q, page, size);
+        return songService.list(bandId(auth), visibility, page, size);
     }
 
     @GetMapping("/{id}")

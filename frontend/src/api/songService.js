@@ -1,14 +1,14 @@
 import { api } from "./api";
 
-export async function getSongs(page = 0, size = 8, q = "") {
+export async function getSongs(page = 0, size = 8, visibility = "") {
     const res = await api.get("/api/songs", {
-        params: { page, size, q: q || undefined }
+        params: { page, size, visibility: visibility || undefined, visibility: visibility || undefined }
     });
     return res.data;
 }
-
+ 
 export async function getSong(id) {
-    const res = await api.get(`/api/songs/${id}`);
+const res = await api.get(`/api/songs/${id}`);
     return res.data;
 }
 

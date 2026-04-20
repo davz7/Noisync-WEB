@@ -7,7 +7,7 @@ public record SongCreateRequest(
         @NotBlank String titulo,
         @NotBlank String artistaAutor,
         @NotNull Integer bpm,
-        @NotBlank String tonoOriginal,
+         String tonoOriginal,
         @NotBlank String escalaBase,      // Ej: C, Dm, etc
         @NotBlank String visibilidad,     // PUBLIC / PRIVATE
         String coverUrl
