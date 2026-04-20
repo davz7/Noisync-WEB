@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.Duration;
 import java.util.HexFormat;
 import java.util.UUID;
 
@@ -32,7 +31,6 @@ public class PasswordResetService {
             AppUserRepository userRepo,
             PasswordEncoder encoder,
             EmailService emailService
-            
     ) {
         this.jdbc = jdbc;
         this.userRepo = userRepo;
@@ -40,7 +38,6 @@ public class PasswordResetService {
         this.emailService = emailService;
     }
 
-    // ===== SOLICITAR RESET =====
     @Transactional
     public void requestReset(ForgotPasswordRequest req) {
 
@@ -62,7 +59,7 @@ public class PasswordResetService {
             )
             VALUES (?, ?, SYSTIMESTAMP + NUMTODSINTERVAL(1,'HOUR'), 'PENDIENTE')
         """, user.getUserId(), tokenHash);
- 
+
         String link = resetUrl + token;
 
         emailService.send(
@@ -73,7 +70,6 @@ public class PasswordResetService {
         );
     }
 
-    // ===== CONFIRMAR RESET =====
     @Transactional
     public void resetPassword(ResetPasswordRequest req) {
 
@@ -81,7 +77,9 @@ public class PasswordResetService {
             throw new IllegalArgumentException("Las contraseñas no coinciden.");
         }
 
-        validateStrongPassword(req.newPassword());
+        if (!PasswordPolicy.isValid(req.newPassword())) {
+            throw new IllegalArgumentException(PasswordPolicy.MESSAGE);
+        }
 
         String tokenHash = sha256Hex(req.token());
 
@@ -117,7 +115,30 @@ public class PasswordResetService {
         """, resetId);
     }
 
-    // ===== Helpers =====
+    @Transactional
+    public void leaderResetPassword(Long bandId, Long musicianId) {
+        AppUser musician = userRepo.findById(musicianId)
+                .orElseThrow(() -> new IllegalArgumentException("Músico no encontrado"));
+
+        if (!musician.getBandId().equals(bandId) || !musician.getRol().equals("MUSICIAN")) {
+            throw new IllegalArgumentException("Músico no pertenece a esta banda");
+        }
+
+        String tempPassword = "Tmp" + UUID.randomUUID().toString()
+                .replace("-", "").substring(0, 8) + "1A";
+
+        musician.setPasswordHash(encoder.encode(tempPassword));
+        musician.setPrimerLogin(1);
+        userRepo.save(musician);
+
+        emailService.send(
+                musician.getCorreo(),
+                "Noisync - Tu contraseña fue restablecida",
+                "El líder de tu banda restableció tu contraseña.\n\n" +
+                "Tu nueva contraseña temporal es: " + tempPassword + "\n\n" +
+                "Al iniciar sesión deberás cambiarla."
+        );
+    }
 
     private static String sha256Hex(String raw) {
         try {
@@ -128,44 +149,4 @@ public class PasswordResetService {
             throw new RuntimeException("No se pudo generar hash");
         }
     }
-
-    private static void validateStrongPassword(String pass) {
-
-        boolean hasUpper = pass.chars().anyMatch(Character::isUpperCase);
-        boolean hasDigit = pass.chars().anyMatch(Character::isDigit);
-
-        if (pass.length() < 8 || !hasUpper || !hasDigit) {
-            throw new IllegalArgumentException(
-                    "La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número."
-            );
-        }
-    }
-
-@Transactional
-public void leaderResetPassword(Long bandId, Long musicianId) {
-    // Validar que sea músico de la banda
-    AppUser musician = userRepo.findById(musicianId)
-            .orElseThrow(() -> new IllegalArgumentException("Músico no encontrado"));
-
-    if (!musician.getBandId().equals(bandId) || !musician.getRol().equals("MUSICIAN")) {
-        throw new IllegalArgumentException("Músico no pertenece a esta banda");
-    }
-
-    // Generar contraseña temporal
-    String tempPassword = "Tmp" + UUID.randomUUID().toString()
-            .replace("-", "").substring(0, 8) + "1A";
-
-    musician.setPasswordHash(encoder.encode(tempPassword));
-    musician.setPrimerLogin(1);
-    userRepo.save(musician);
-
-    // Enviar por correo
-    emailService.send(
-            musician.getCorreo(),
-            "Noisync - Tu contraseña fue restablecida",
-            "El líder de tu banda restableció tu contraseña.\n\n" +
-            "Tu nueva contraseña temporal es: " + tempPassword + "\n\n" +
-            "Al iniciar sesión deberás cambiarla."
-    );
-}
 }

@@ -7,13 +7,14 @@ import { api } from "../../../api/api";
 import { toastSuccess, toastError } from "../../../api/alerts.js";
 import { useState } from "react";
 
-
 function ResetPassword() {
-
     const navigate = useNavigate();
     const [params] = useSearchParams();
     const token = params.get("token");
     const [isLoading, setIsLoading] = useState(false);
+
+    const PASSWORD_RULE_TEXT =
+        "La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número";
 
     const initialValues = {
         newPassword: "",
@@ -21,16 +22,15 @@ function ResetPassword() {
     };
 
     const validar = (values) => {
-
         const e = {};
         const { newPassword, confirmPassword } = values;
 
         if (!newPassword.trim()) {
             e.newPassword = "La nueva contraseña es obligatoria";
         } else {
-            const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+            const passRegex = /^(?=.[A-Z])(?=.\d).{8,}$/;
             if (!passRegex.test(newPassword)) {
-                e.newPassword = "Mín 8 caracteres, 1 mayúscula, 1 minúscula y 1 número";
+                e.newPassword = PASSWORD_RULE_TEXT;
             }
         }
 
@@ -49,7 +49,6 @@ function ResetPassword() {
     const onValidSubmit = async (vals) => {
         setIsLoading(true);
         try {
-
             await api.post("/api/auth/reset-password", {
                 token: token,
                 newPassword: vals.newPassword,
@@ -57,11 +56,8 @@ function ResetPassword() {
             });
 
             toastSuccess("Contraseña actualizada correctamente");
-
             navigate("/login", { replace: true });
-
         } catch (error) {
-
             console.error(error);
 
             if (error.response?.status === 400) {
@@ -69,7 +65,6 @@ function ResetPassword() {
             } else {
                 toastError("No se pudo actualizar la contraseña");
             }
-
         } finally {
             setIsLoading(false);
         }
@@ -87,7 +82,6 @@ function ResetPassword() {
                 </p>
 
                 <form onSubmit={handleSubmit(onValidSubmit)} noValidate>
-
                     <FormInput
                         name="newPassword"
                         label="Nueva contraseña"
@@ -99,6 +93,8 @@ function ResetPassword() {
                         error={errors.newPassword}
                         forceValidate={submitIntentado}
                     />
+
+                    <p className="text-muted small mb-3">{PASSWORD_RULE_TEXT}</p>
 
                     <FormInput
                         name="confirmPassword"
@@ -117,12 +113,15 @@ function ResetPassword() {
                         className="btn btn-dark w-100 custom-btn"
                         disabled={isLoading}
                     >
-                        {isLoading
-                            ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Actualizando...</>
-                            : "Actualizar contraseña"
-                        }
+                        {isLoading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                                Actualizando...
+                            </>
+                        ) : (
+                            "Actualizar contraseña"
+                        )}
                     </button>
-
                 </form>
 
                 <hr className="my-4" />

@@ -7,12 +7,12 @@ import { registerRequest, saveSession } from "../../../api/authService.js";
 import { toastError } from "../../../api/alerts.js";
 import { useState } from "react";
 
-
-
 function Registro() {
-
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+
+    const PASSWORD_RULE_TEXT =
+        "La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número";
 
     const initialValues = {
         nombre: "",
@@ -28,6 +28,7 @@ function Registro() {
         const { nombre, nombreUsuario, email, password, confirmarPassword, nombreBanda } = values;
 
         if (!nombre.trim()) e.nombre = "El nombre completo es obligatorio";
+
         if (!nombreUsuario.trim()) e.nombreUsuario = "El nombre de usuario es obligatorio";
 
         const emailValue = email.trim();
@@ -41,9 +42,9 @@ function Registro() {
         if (!password.trim()) {
             e.password = "La contraseña es obligatoria";
         } else {
-            const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+            const passRegex = /^(?=.[A-Z])(?=.\d).{8,}$/;
             if (!passRegex.test(password)) {
-                e.password = "Mín 8 caracteres, 1 mayúscula, 1 minúscula y 1 número";
+                e.password = PASSWORD_RULE_TEXT;
             }
         }
 
@@ -69,7 +70,6 @@ function Registro() {
     const onValidSubmit = async (vals) => {
         setIsLoading(true);
         try {
-
             const body = {
                 nombreCompleto: vals.nombre,
                 username: vals.nombreUsuario,
@@ -80,9 +80,7 @@ function Registro() {
             };
 
             const data = await registerRequest(body);
-
             saveSession(data);
-
             navigate("/home-leader");
         } catch (err) {
             console.error(err);
@@ -95,7 +93,6 @@ function Registro() {
     return (
         <div className="registro-page">
             <AuthHeader />
-
             <div className="registro-card">
                 <h2 className="fw-bold text-center mb-2">Registro</h2>
                 <p className="text-muted text-center mb-4">Crea tu cuenta de Noisync</p>
@@ -147,6 +144,8 @@ function Registro() {
                         forceValidate={submitIntentado}
                     />
 
+                    <p className="text-muted small mb-3">{PASSWORD_RULE_TEXT}</p>
+
                     <FormInput
                         label="Confirmar Contraseña"
                         name="confirmarPassword"
@@ -177,12 +176,16 @@ function Registro() {
                     <button
                         type="submit"
                         className="btn btn-dark w-100 custom-btn"
-                        disabled={isLoading}             // ← 4. bloquear doble submit
+                        disabled={isLoading}
                     >
-                        {isLoading
-                            ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Creando cuenta...</>
-                            : "Crear Cuenta"
-                        }
+                        {isLoading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                                Creando cuenta...
+                            </>
+                        ) : (
+                            "Crear Cuenta"
+                        )}
                     </button>
                 </form>
 

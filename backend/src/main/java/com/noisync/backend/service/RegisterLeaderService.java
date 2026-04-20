@@ -3,13 +3,13 @@ package com.noisync.backend.service;
 import com.noisync.backend.domain.AppUser;
 import com.noisync.backend.dto.RegisterLeaderRequest;
 import com.noisync.backend.dto.RegisterLeaderResponse;
+import com.noisync.backend.repository.AppUserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.noisync.backend.repository.AppUserRepository;
 
 @Service
 public class RegisterLeaderService {
@@ -40,14 +40,7 @@ public class RegisterLeaderService {
             throw new IllegalArgumentException("Las contraseñas no coinciden");
         }
 
-        String pass = req.password();
-        boolean hasUpper = pass.chars().anyMatch(Character::isUpperCase);
-        boolean hasDigit = pass.chars().anyMatch(Character::isDigit);
-
-        if (pass.length() < 8 || !hasUpper || !hasDigit) {
-            throw new IllegalArgumentException(
-                    "La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número");
-        }
+        PasswordPolicy.validateOrThrow(req.password());
         log.info(">> Validaciones OK");
 
         Integer usernameCount = jdbc.queryForObject(
@@ -96,7 +89,6 @@ public class RegisterLeaderService {
         return new RegisterLeaderResponse(true, bandId, userId, "Cuenta creada correctamente.");
     }
 
-    // Fuera de @Transactional — el correo se envía después del commit
     public void sendVerificationEmail(Long userId) {
         log.info(">> Buscando usuario para enviar email, userId={}", userId);
         AppUser leader = appUserRepository.findById(userId)
