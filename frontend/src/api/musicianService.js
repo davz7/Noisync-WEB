@@ -1,7 +1,8 @@
 import { api } from "./api";
 
-export async function getMusicians() {
-  const res = await api.get("/api/musicians");
+export async function getMusicians(q) {
+  const params = q && q.trim() ? { q: q.trim() } : {};
+  const res = await api.get("/api/musicians", { params });
   return res.data;
 }
 

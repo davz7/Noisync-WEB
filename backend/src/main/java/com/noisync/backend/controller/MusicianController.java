@@ -42,11 +42,13 @@ public class MusicianController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_LEADER"));
     }
 
-    // Solo leader
-    @GetMapping
-    public List<MusicianResponse> list(Authentication auth) {
-        return service.listMusicians(bandId(auth));
-    }
+// Solo leader
+@GetMapping
+public List<MusicianResponse> list(
+        @RequestParam(required = false) String q, //aceptamos
+        Authentication auth) {
+    return service.listMusicians(bandId(auth), q);
+}
 
     // Leader o el mismo músico
     @GetMapping("/{musicianId}/instruments")

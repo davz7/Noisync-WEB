@@ -18,24 +18,24 @@ public class MusicianInstrumentService {
         this.jdbc = jdbc;
     }
 
-private final RowMapper<MusicianResponse> musicianMapper = (rs, rn) -> {
+    private final RowMapper<MusicianResponse> musicianMapper = (rs, rn) -> {
 
-    String instrumentosStr = rs.getString("instrumentos");
+        String instrumentosStr = rs.getString("instrumentos");
 
-    List<String> instrumentos = instrumentosStr == null
-            ? List.of()
-            : List.of(instrumentosStr.split(", "));
+        List<String> instrumentos = instrumentosStr == null
+                ? List.of()
+                : List.of(instrumentosStr.split(", "));
 
-    return new MusicianResponse(
-            rs.getLong("user_id"),
-            rs.getLong("band_id"),
-            rs.getString("nombre_completo"),
-            rs.getString("correo"),
-            rs.getString("username"),
-            rs.getString("estatus"),
-            instrumentos
-    );
-};
+        return new MusicianResponse(
+                rs.getLong("user_id"),
+                rs.getLong("band_id"),
+                rs.getString("nombre_completo"),
+                rs.getString("correo"),
+                rs.getString("username"),
+                rs.getString("estatus"),
+                instrumentos
+        );
+    };
 
     private final RowMapper<InstrumentResponse> instrumentMapper = (rs, rn) -> new InstrumentResponse(
             rs.getLong("instrument_id"),
@@ -43,26 +43,48 @@ private final RowMapper<MusicianResponse> musicianMapper = (rs, rn) -> {
             rs.getString("nombre"),
             rs.getInt("activo"),
             rs.getInt("total_musicos")
-
     );
 
-public List<MusicianResponse> listMusicians(Long bandId) {
-    return jdbc.query("""
-        SELECT 
-            u.user_id, u.band_id, p.nombre_completo, p.correo, u.username, u.estatus,
-            (SELECT LISTAGG(i2.nombre, ', ') WITHIN GROUP (ORDER BY i2.nombre)
-             FROM musician_instrument mi2
-             JOIN instrument i2 ON i2.instrument_id = mi2.instrument_id
-             WHERE mi2.user_id = u.user_id) AS instrumentos
-        FROM app_user u
-        JOIN person p ON p.person_id = u.person_id
-        WHERE u.band_id = ? AND u.rol = 'MUSICIAN' AND u.activo = 1
-        ORDER BY p.nombre_completo ASC
-    """, musicianMapper, bandId);
-}
+    public List<MusicianResponse> listMusicians(Long bandId, String q) {
+
+        if (q == null || q.trim().isEmpty()) {
+            return jdbc.query("""
+                SELECT 
+                    u.user_id, u.band_id, p.nombre_completo, p.correo, u.username, u.estatus,
+                    (SELECT LISTAGG(i2.nombre, ', ') WITHIN GROUP (ORDER BY i2.nombre)
+                     FROM musician_instrument mi2
+                     JOIN instrument i2 ON i2.instrument_id = mi2.instrument_id
+                     WHERE mi2.user_id = u.user_id) AS instrumentos
+                FROM app_user u
+                JOIN person p ON p.person_id = u.person_id
+                WHERE u.band_id = ? AND u.rol = 'MUSICIAN' AND u.activo = 1
+                ORDER BY p.nombre_completo ASC
+            """, musicianMapper, bandId);
+        }
+
+        String like = "%" + q.toLowerCase() + "%";
+
+        return jdbc.query("""
+            SELECT 
+                u.user_id, u.band_id, p.nombre_completo, p.correo, u.username, u.estatus,
+                (SELECT LISTAGG(i2.nombre, ', ') WITHIN GROUP (ORDER BY i2.nombre)
+                 FROM musician_instrument mi2
+                 JOIN instrument i2 ON i2.instrument_id = mi2.instrument_id
+                 WHERE mi2.user_id = u.user_id) AS instrumentos
+            FROM app_user u
+            JOIN person p ON p.person_id = u.person_id
+            WHERE u.band_id = ?
+              AND u.rol = 'MUSICIAN'
+              AND u.activo = 1
+              AND (
+                    LOWER(p.nombre_completo) LIKE ?
+                    OR LOWER(u.username) LIKE ?
+                  )
+            ORDER BY p.nombre_completo ASC
+        """, musicianMapper, bandId, like, like);
+    }
 
     public List<InstrumentResponse> listMusicianInstruments(Long bandId, Long musicianId) {
-        // valida que el musico sea de la banda
         Integer ok = jdbc.queryForObject("""
             SELECT COUNT(*) FROM app_user
             WHERE user_id = ? AND band_id = ? AND rol = 'MUSICIAN'
@@ -83,7 +105,6 @@ public List<MusicianResponse> listMusicians(Long bandId) {
 
     @Transactional
     public void assign(Long bandId, Long musicianId, Long instrumentId) {
-        // valida musico
         Integer okM = jdbc.queryForObject("""
             SELECT COUNT(*) FROM app_user
             WHERE user_id = ? AND band_id = ? AND rol = 'MUSICIAN'
@@ -91,7 +112,6 @@ public List<MusicianResponse> listMusicians(Long bandId) {
 
         if (okM == null || okM == 0) throw new IllegalArgumentException("Musico no encontrado");
 
-        // valida instrumento
         Integer okI = jdbc.queryForObject("""
             SELECT COUNT(*) FROM instrument
             WHERE instrument_id = ? AND band_id = ? AND activo = 1
@@ -99,7 +119,6 @@ public List<MusicianResponse> listMusicians(Long bandId) {
 
         if (okI == null || okI == 0) throw new IllegalArgumentException("Instrumento no encontrado");
 
-        // insertar relacion (pk compuesta evita duplicado)
         jdbc.update("""
             INSERT INTO musician_instrument (user_id, instrument_id)
             VALUES (?, ?)
@@ -108,7 +127,6 @@ public List<MusicianResponse> listMusicians(Long bandId) {
 
     @Transactional
     public void unassign(Long bandId, Long musicianId, Long instrumentId) {
-        // validar instrumento pertenece a la banda
         Integer okI = jdbc.queryForObject("""
             SELECT COUNT(*) FROM instrument
             WHERE instrument_id = ? AND band_id = ?
@@ -123,34 +141,31 @@ public List<MusicianResponse> listMusicians(Long bandId) {
     }
 
     @Transactional
-public void updateInstruments(Long bandId, Long musicianId, List<String> instrumentos) {
-    // Validar que sea músico de la banda
-    Integer ok = jdbc.queryForObject("""
-        SELECT COUNT(*) FROM app_user
-        WHERE user_id = ? AND band_id = ? AND rol = 'MUSICIAN'
-    """, Integer.class, musicianId, bandId);
+    public void updateInstruments(Long bandId, Long musicianId, List<String> instrumentos) {
+        Integer ok = jdbc.queryForObject("""
+            SELECT COUNT(*) FROM app_user
+            WHERE user_id = ? AND band_id = ? AND rol = 'MUSICIAN'
+        """, Integer.class, musicianId, bandId);
 
-    if (ok == null || ok == 0) throw new IllegalArgumentException("Musico no encontrado");
+        if (ok == null || ok == 0) throw new IllegalArgumentException("Musico no encontrado");
 
-    // Borrar instrumentos actuales
-    jdbc.update("DELETE FROM musician_instrument WHERE user_id = ?", musicianId);
+        jdbc.update("DELETE FROM musician_instrument WHERE user_id = ?", musicianId);
 
-    // Insertar nuevos
-    for (String nombre : instrumentos) {
-        Long instrumentId = null;
-        try {
-            instrumentId = jdbc.queryForObject(
-                "SELECT instrument_id FROM instrument WHERE LOWER(nombre) = LOWER(?) AND band_id = ?",
-                Long.class, nombre, bandId
-            );
-        } catch (Exception ignored) {}
+        for (String nombre : instrumentos) {
+            Long instrumentId = null;
+            try {
+                instrumentId = jdbc.queryForObject(
+                    "SELECT instrument_id FROM instrument WHERE LOWER(nombre) = LOWER(?) AND band_id = ?",
+                    Long.class, nombre, bandId
+                );
+            } catch (Exception ignored) {}
 
-        if (instrumentId != null) {
-            jdbc.update(
-                "INSERT INTO musician_instrument (user_id, instrument_id) VALUES (?, ?)",
-                musicianId, instrumentId
-            );
+            if (instrumentId != null) {
+                jdbc.update(
+                    "INSERT INTO musician_instrument (user_id, instrument_id) VALUES (?, ?)",
+                    musicianId, instrumentId
+                );
+            }
         }
     }
-}
 }
